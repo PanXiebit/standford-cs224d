@@ -32,12 +32,13 @@ def wordVectors(pretrain=False):
     return wordVectors
 
 wordVectors = wordVectors(pretrain=True)
+print(wordVectors.shape)
 dimVectors = wordVectors.shape[1]
 
 # Load the train set
 trainset = dataset.getTrainSentences()
-nTrain = len(trainset)
-trainFeatures = np.zeros((nTrain, dimVectors))
+nTrain = len(trainset) # 8544
+trainFeatures = np.zeros((nTrain, dimVectors)) # 8544， 50
 trainLabels = np.zeros((nTrain,), dtype=np.int32)
 for i in range(nTrain):
     words, trainLabels[i] = trainset[i]
@@ -46,7 +47,7 @@ for i in range(nTrain):
 # Prepare dev set features
 devset = dataset.getDevSentences()
 nDev = len(devset)
-devFeatures = np.zeros((nDev, dimVectors))
+devFeatures = np.zeros((nDev, dimVectors)) # (1101, 50)
 devLabels = np.zeros((nDev,), dtype=np.int32)
 for i in range(nDev):
     words, devLabels[i] = devset[i]
@@ -66,7 +67,7 @@ for regularization in REGULARIZATION:
 
     # Test on train set
     _, _, pred = softmaxRegression(trainFeatures, trainLabels, weights)
-    trainAccuracy = accuracy(trainLabels, pred)
+    trainAccuracy = accuracy(trainLabels, pred) # 13.7289325843
     print ("Train accuracy (%%): %f" % trainAccuracy)
 
     # Test on dev set
@@ -127,4 +128,7 @@ plt.ylabel("accuracy")
 plt.legend(['train', 'dev'], loc='upper left')
 plt.savefig("q4_reg_v_acc.png")
 plt.show()
+
+####
+# 准确率比自己训练的词向量还要低。。一定是哪儿出了问题？？？
 

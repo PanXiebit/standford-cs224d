@@ -26,12 +26,25 @@ class Config(object):
 class SoftmaxModel(Model):
   """Implements a Softmax classifier with cross-entropy loss."""
 
+  def __init__(self, config):
+    """Initializes the model.
+
+    Args:
+      config: A model configuration object of type Config
+    """
+    self.config = config
+    # Generate placeholders for the images and labels.
+    self.load_data()
+    self.add_placeholders()
+    self.pred = self.add_model(self.input_placeholder)
+    self.loss = self.add_loss_op(self.pred)
+    self.train_op = self.add_training_op(self.loss)
+
   def load_data(self):
     """Creates a synthetic dataset and stores it in memory."""
     np.random.seed(1234)
-    self.input_data = np.random.rand(
-        self.config.n_samples, self.config.n_features)
-    self.input_labels = np.ones((self.config.n_samples,), dtype=np.int32)
+    self.input_data = np.random.rand(self.config.n_samples, self.config.n_features) # (1024, 100)
+    self.input_labels = np.ones((self.config.n_samples,), dtype=np.int32) # (1024,)
 
   def add_placeholders(self):
     """Generate placeholder variables to represent the input tensors.
@@ -54,7 +67,8 @@ class SoftmaxModel(Model):
     (Don't change the variable names)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    self.input_placeholder = tf.placeholder(tf.float32, shape=(self.config.batch_size,self.config.n_features))
+    self.labels_placeholder = tf.placeholder(tf.int32, shape=(self.config.batch_size, self.config.n_classes))
     ### END YOUR CODE
 
   def create_feed_dict(self, input_batch, label_batch):
@@ -79,33 +93,9 @@ class SoftmaxModel(Model):
       feed_dict: The feed dictionary mapping from placeholders to values.
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    feed_dict = {self.input_placeholder: input_batch, self.labels_placeholder: label_batch}
     ### END YOUR CODE
     return feed_dict
-
-  def add_training_op(self, loss):
-    """Sets up the training Ops.
-
-    Creates an optimizer and applies the gradients to all trainable variables.
-    The Op returned by this function is what must be passed to the
-    `sess.run()` call to cause the model to train. See 
-
-    https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
-
-    for more information.
-
-    Hint: Use tf.train.GradientDescentOptimizer to get an optimizer object.
-          Calling optimizer.minimize() will return a train_op object.
-
-    Args:
-      loss: Loss tensor, from cross_entropy_loss.
-    Returns:
-      train_op: The Op for training.
-    """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
-    return train_op
 
   def add_model(self, input_data):
     """Adds a linear-layer plus a softmax transformation
@@ -127,7 +117,11 @@ class SoftmaxModel(Model):
       out: A tensor of shape (batch_size, n_classes)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    with tf.variable_scope("transformation"):
+      W = tf.Variable(tf.random_uniform(shape=([self.config.n_features, self.config.n_classes])))
+      b = tf.get_variable('biases', shape=([self.config.n_classes,]))
+      z = tf.matmul(self.input_placeholder, W) + b
+    out = softmax(z)
     ### END YOUR CODE
     return out
 
@@ -142,9 +136,33 @@ class SoftmaxModel(Model):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    loss = cross_entropy_loss(self.labels_placeholder, pred)
     ### END YOUR CODE
     return loss
+
+  def add_training_op(self, loss):
+    """Sets up the training Ops.
+
+    Creates an optimizer and applies the gradients to all trainable variables.
+    The Op returned by this function is what must be passed to the
+    `sess.run()` call to cause the model to train. See 
+
+    https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
+
+    for more information.
+
+    Hint: Use tf.train.GradientDescentOptimizer to get an optimizer object.
+          Calling optimizer.minimize() will return a train_op object.
+
+    Args:
+      loss: Loss tensor, from cross_entropy_loss.
+    Returns:
+      train_op: The Op for training.
+    """
+    ### YOUR CODE HERE
+    train_op = tf.train.GradientDescentOptimizer(self.config.lr).minimize(loss=loss)
+    ### END YOUR CODE
+    return train_op
 
   def run_epoch(self, sess, input_data, input_labels):
     """Runs an epoch of training.
@@ -174,11 +192,11 @@ class SoftmaxModel(Model):
       # inspect the values of your Ops or variables, you may include them
       # in the list passed to sess.run() and the value tensors will be
       # returned in the tuple from the call.
-      _, loss_value = sess.run([self.train_op, self.loss], feed_dict=feed_dict)
+      _, loss_value = sess.run([self.train_op, self.loss], feed_dict=feed_dict) # sess.run(self.train_op)表示执行梯度下降，返回值用_代替，
       average_loss += loss_value
 
     average_loss = average_loss / step
-    return average_loss 
+    return average_loss # 表示一个epoch的平均损失值，以一个训练集为基础
 
   def fit(self, sess, input_data, input_labels):
     """Fit model on provided data.
@@ -200,20 +218,6 @@ class SoftmaxModel(Model):
              % (epoch, average_loss, duration))
       losses.append(average_loss)
     return losses
-
-  def __init__(self, config):
-    """Initializes the model.
-
-    Args:
-      config: A model configuration object of type Config
-    """
-    self.config = config
-    # Generate placeholders for the images and labels.
-    self.load_data()
-    self.add_placeholders()
-    self.pred = self.add_model(self.input_placeholder)
-    self.loss = self.add_loss_op(self.pred)
-    self.train_op = self.add_training_op(self.loss)
   
 def test_SoftmaxModel():
   """Train softmax model for a number of steps."""
@@ -225,7 +229,7 @@ def test_SoftmaxModel():
     sess = tf.Session()
   
     # Run the Op to initialize the variables.
-    init = tf.initialize_all_variables()
+    init = tf.global_variables_initializer()
     sess.run(init)
   
     losses = model.fit(sess, model.input_data, model.input_labels)
@@ -233,7 +237,7 @@ def test_SoftmaxModel():
   # If ops are implemented correctly, the average loss should fall close to zero
   # rapidly.
   assert losses[-1] < .5
-  print "Basic (non-exhaustive) classifier tests pass\n"
+  print("Basic (non-exhaustive) classifier tests pass\n")
 
 if __name__ == "__main__":
     test_SoftmaxModel()

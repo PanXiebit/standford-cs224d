@@ -3,7 +3,7 @@
 # Assigment 2, part 1 for CS224D
 ##
 
-from utils import invert_dict
+from data_utils.utils import invert_dict
 from numpy import *
 
 def load_wv(vocabfile, wvfile):
@@ -20,3 +20,4 @@ def save_predictions(y, filename):
     with open(filename, 'w') as fd:
         fd.write("\n".join(map(str, y)))
         fd.write("\n")
+

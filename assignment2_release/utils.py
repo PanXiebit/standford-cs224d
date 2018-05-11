@@ -6,7 +6,7 @@ class Vocab(object):
   def __init__(self):
     self.word_to_index = {}
     self.index_to_word = {}
-    self.word_freq = defaultdict(int)
+    self.word_freq = defaultdict(int) # defaultdict(<class 'int'>, {})
     self.total_words = 0
     self.unknown = '<unk>'
     self.add_word(self.unknown, count=0)
@@ -16,13 +16,13 @@ class Vocab(object):
       index = len(self.word_to_index)
       self.word_to_index[word] = index
       self.index_to_word[index] = word
-    self.word_freq[word] += count
+    self.word_freq[word] += count  # 记录每个词的词频
 
   def construct(self, words):
     for word in words:
       self.add_word(word)
     self.total_words = float(sum(self.word_freq.values()))
-    print '{} total words with {} uniques'.format(self.total_words, len(self.word_freq))
+    print ('{} total words with {} uniques'.format(self.total_words, len(self.word_freq)))
 
   def encode(self, word):
     if word not in self.word_to_index:
@@ -32,7 +32,7 @@ class Vocab(object):
   def decode(self, index):
     return self.index_to_word[index]
 
-  def __len__(self):
+  def __len__(self): # 运算符重载
     return len(self.word_freq)
 
 def calculate_perplexity(log_probs):
@@ -79,7 +79,7 @@ def sample(a, temperature=1.0):
 def data_iterator(orig_X, orig_y=None, batch_size=32, label_size=2, shuffle=False):
   # Optionally shuffle the data before training
   if shuffle:
-    indices = np.random.permutation(len(orig_X))
+    indices = np.random.permutation(len(orig_X)) # 在origin_X的第一个维度上随机打乱顺序
     data_X = orig_X[indices]
     data_y = orig_y[indices] if np.any(orig_y) else None
   else:
@@ -87,12 +87,17 @@ def data_iterator(orig_X, orig_y=None, batch_size=32, label_size=2, shuffle=Fals
     data_y = orig_y
   ###
   total_processed_examples = 0
-  total_steps = int(np.ceil(len(data_X) / float(batch_size)))
-  for step in xrange(total_steps):
+  total_steps = int(np.ceil(len(data_X) / float(batch_size))) # ceil向上取整，表示遍历完一个完整的训练集所需的steps
+  for step in range(total_steps):
     # Create the batch by selecting up to batch_size elements
     batch_start = step * batch_size
-    x = data_X[batch_start:batch_start + batch_size]
+    # 怎么感觉这儿有问题，不需要比较batch_start + batch_size和len(data_X)吗？
+    x = data_X[batch_start:batch_start + batch_size]  # 不需要，超过了就按照len(data_X)来计算～
+
+
+
     # Convert our target from the class index to a one hot vector
+    # 将data_y转换为one-hot vector
     y = None
     if np.any(data_y):
       y_indices = data_y[batch_start:batch_start + batch_size]
